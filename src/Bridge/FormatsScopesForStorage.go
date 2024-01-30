@@ -1,16 +1,13 @@
 package bridge
 
+import "encoding/json"
 
-
-type Scope struct {
-	Identifier string `json:"identifier"`
-}
-
-func NewScope(identifier string) *Scope {
+func createScope(identifier string) *Scope {
 	return &Scope{
 		Identifier: identifier,
 	}
 }
+
 
 func (scope *Scope) GetIdentifier() string {
 	return scope.Identifier
@@ -21,11 +18,17 @@ type FormatsScopesForStorage interface {
 }
 
 func formatScopesForStorage(scopes []Scope) string {
-	return json.Marshal(scopesToArray(scopes))
+	b, err := json.Marshal(scopesToArray(scopes))
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
 
 func scopesToArray(scopes []Scope) []string {
-	return array_map(func(scope Scope) string {
-		return scope.Identifier
-	}, scopes)
+	mappedScopes := make([]string, len(scopes))
+	for i, scope := range scopes {
+		mappedScopes[i] = scope.Identifier
+	}
+	return mappedScopes
 }

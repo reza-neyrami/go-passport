@@ -4,6 +4,8 @@ import "encoding/json"
 
 type Scope struct {
 	Name string `json:"name"`
+	
+	Identifier string `json:"identifier"`
 }
 
 func NewScope(name string) *Scope {

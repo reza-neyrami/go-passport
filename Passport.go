@@ -31,10 +31,7 @@ type Passport struct {
 	RegistersRoutes                 bool
 }
 
-type Scope struct {
-	ID          string
-	Description string
-}
+
 
 func NewPassport() *Passport {
 	return &Passport{
