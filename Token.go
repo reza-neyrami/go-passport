@@ -5,34 +5,37 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Token struct {
-	id           string
-	token        string
-	access_token string
-	revoked      bool
-	expires_at   time.Time
-	user_id      string
-	client_id    string
+	*gorm.Model
+	ID          string
+	TOKEN       string
+	ACCESSTOKEN string
+	REVOKED     bool
+	EXPIRES_AT  time.Time
+	USERID      uint
+	CLIENTID    uint
+    Scopes      []string
 }
 
-func NewToken(token, access_token string, revoked bool, expires_at time.Time, user_id, client_id string) *Token {
+func NewToken(token, access_token string, revoked bool, expires_at time.Time, user_id uint, client_id uint) *Token {
 	return &Token{
-		id:           uuid.New().String(),
-		token:        token,
-		access_token: access_token,
-		revoked:      revoked,
-		expires_at:   expires_at,
-		user_id:      user_id,
-		client_id:    client_id,
+		ID:          uuid.New().String(),
+		TOKEN:       token,
+		ACCESSTOKEN: access_token,
+		REVOKED:     revoked,
+		EXPIRES_AT:  expires_at,
+		USERID:      user_id,
+		CLIENTID:    client_id,
 	}
 }
 
 func (t *Token) Revoke() error {
-	t.revoked = true
+	t.REVOKED = true
 
-	err := t.Save()
+	err := t.Save(t).Error
 	if err != nil {
 		return fmt.Errorf("Error revoking token: %v", err)
 	}
@@ -41,7 +44,7 @@ func (t *Token) Revoke() error {
 }
 
 func (t *Token) HasScope(scope string) bool {
-	for _, s := range t.scopes {
+	for _, s := range t.Scopes {
 		if s == scope {
 			return true
 		}
