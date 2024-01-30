@@ -1,99 +1,73 @@
 package console
 
 import (
-	"context"
+	"errors"
 	"time"
 
-	"github.com/jmoiron/sqlx"
+	"gorm.io/gorm"
 )
 
 type Token struct {
+	*gorm.Model
 	ID        uint
 	Revoked   bool
 	ExpiresAt time.Time
 }
 
 type AuthCode struct {
+	*gorm.Model
 	ID        uint
 	Revoked   bool
 	ExpiresAt time.Time
 }
 
 type RefreshToken struct {
+	*gorm.Model
 	ID        uint
 	Revoked   bool
 	ExpiresAt time.Time
 }
 
-func Purge(db *sqlx.DB, hours int) error {
-	// Revoke all revoked tokens
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
+type PurgeCommand struct {
+	db        *gorm.DB
+	Option    func(string) bool
+	OptionInt func(string) int
+}
+
+func (s *PurgeCommand) Handle() error {
+
+	// Parse the options
+	revoked := s.Option("revoked")
+	expired := s.Option("expired")
+	hours := s.OptionInt("hours")
+
+	// Calculate the expiration date
+	expiredDate := time.Now().Add(-time.Duration(hours) * time.Hour)
+
+	// Purge revoked and expired tokens
+	if revoked && expired {
+		s.db.Where("revoked = ?", true).Or("expires_at <= ?", expiredDate).Delete(&Token{})
+		s.db.Where("revoked = ?", true).Or("expires_at <= ?", expiredDate).Delete(&AuthCode{})
+		s.db.Where("revoked = ?", true).Or("expires_at <= ?", expiredDate).Delete(&RefreshToken{})
+
+		if hours > 0 {
+			return errors.New("cannot purge revoked and expired tokens with hours option")
+		}
+
+		return nil
+	} else if revoked {
+		s.db.Where("revoked = ?", true).Delete(&Token{})
+		s.db.Where("revoked = ?", true).Delete(&AuthCode{})
+		s.db.Where("revoked = ?", true).Delete(&RefreshToken{})
+
+		return nil
+	} else if expired {
+		s.db.Where("expires_at <= ?", expiredDate).Delete(&Token{})
+		s.db.Where("expires_at <= ?", expiredDate).Delete(&AuthCode{})
+		s.db.Where("expires_at <= ?", expiredDate).Delete(&RefreshToken{})
+
+		return nil
+	} else {
+		return errors.New("must specify either --revoked or --expired")
 	}
-
-	query := "UPDATE tokens SET revoked = true"
-	_, err = tx.ExecContext(context.Background(), query)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
-
-	// Delete all expired tokens
-	expired := time.Now().Add(-time.Duration(hours) * time.Hour)
-	query = "DELETE FROM tokens WHERE expires_at < $1"
-	_, err = db.ExecContext(context.Background(), query, expired)
-	if err != nil {
-		return err
-	}
-
-	// Revoke all revoked auth codes
-	tx, err = db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	query = "UPDATE auth_codes SET revoked = true"
-	_, err = tx.ExecContext(context.Background(), query)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
-
-	// Delete all expired auth codes
-	expired = time.Now().Add(-time.Duration(hours) * time.Hour)
-	query = "DELETE FROM auth_codes WHERE expires_at < $1"
-	_, err = db.ExecContext(context.Background(), query, expired)
-	if err != nil {
-		return err
-	}
-
-	// Revoke all revoked refresh tokens
-	tx, err = db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	query = "UPDATE refresh_tokens SET revoked = true"
-	_, err = tx.ExecContext(context.Background(), query)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
-
-	// Delete all expired refresh tokens
-	expired = time.Now().Add(-time.Duration(hours) * time.Hour)
-	query = "DELETE FROM refresh_tokens WHERE expires_at < $1"
-	_, err = db.ExecContext(context.Background(), query, expired)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

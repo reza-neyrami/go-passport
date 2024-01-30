@@ -73,12 +73,18 @@ func (c *KeysCommand) Handle() {
 }
 
 func (c *KeysCommand) WriteToFile(publicKeyPath, privateKeyPath string) error {
-	publicKey, err := rsa.GenerateKey(rand.Reader, c.length)
+	privateKey, err := rsa.GenerateKey(rand.Reader, c.length)
 	if err != nil {
 		return err
 	}
 
-	publicKeyBytes := x509.MarshalPKCS1PublicKey(publicKey)
+	publicKey := &privateKey.PublicKey
+
+	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publicKey)
+	if err != nil {
+		return err
+	}
+
 	publicKeyPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PUBLIC KEY",
 		Bytes: publicKeyBytes,
@@ -89,13 +95,13 @@ func (c *KeysCommand) WriteToFile(publicKeyPath, privateKeyPath string) error {
 		return err
 	}
 
-	privateKeyBytes := x509.MarshalPKCS1PrivateKey(publicKey)
+	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privateKey)
 	privateKeyPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "RSA PRIVATE KEY",
 		Bytes: privateKeyBytes,
 	})
 
-	err = os.WriteFile(privateKeyPath, publicKeyPEM, 0600)
+	err = os.WriteFile(privateKeyPath, privateKeyPEM, 0600)
 	if err != nil {
 		return err
 	}
