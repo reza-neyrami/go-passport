@@ -1,4 +1,4 @@
-package main
+package src
 
 type TransientToken interface {
     Can(scope string) bool

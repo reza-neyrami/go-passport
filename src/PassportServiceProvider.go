@@ -1,4 +1,4 @@
-package main
+package src
 
 import (
 	console "github.com/reza-neyrami/go-passport/src/Console"
@@ -74,7 +74,7 @@ func (s *PassportServiceProvider) RegisterRoutes() {
 	if Passport.RegistersRoutes {
 		router := app.NewRouter()
 		router.Group("passport", func(r *router.Router) {
-			r.PathPrefix(config.Get("passport.path", "oauth")).Namespace("Laravel/Passport/Http/Controllers").LoadRoutesFrom(currentDirectoryPath() + "/../routes/web.go")
+			r.PathPrefix(config.Get("passport.path", "oauth")).Namespace("goral/Passport/Http/Controllers").LoadRoutesFrom(currentDirectoryPath() + "/../routes/web.go")
 		})
 		app.Router.Merge(router)
 	}
