@@ -74,7 +74,7 @@ func (s *PassportServiceProvider) RegisterRoutes() {
 	if Passport.RegistersRoutes {
 		router := app.NewRouter()
 		router.Group("passport", func(r *router.Router) {
-			r.PathPrefix(config.Get("passport.path", "oauth")).Namespace("goral/Passport/Http/Controllers").LoadRoutesFrom(currentDirectoryPath() + "/../routes/web.go")
+			r.PathPrefix(config.Get("passport.path", "oauth")).Namespace("goralvel/Passport/Http/Controllers").LoadRoutesFrom(currentDirectoryPath() + "/../routes/web.go")
 		})
 		app.Router.Merge(router)
 	}
